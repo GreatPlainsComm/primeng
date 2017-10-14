@@ -6,9 +6,9 @@ import {DomHandler} from '../dom/domhandler';
 @Component({
     selector: 'p-sidebar',
     template: `
-        <div #container [ngClass]="{'ui-sidebar ui-widget ui-widget-content ui-shadow':true, 'ui-sidebar-active': visible, 
+        <div #container [ngClass]="{'ui-sidebar ui-widget ui-widget-content ui-shadow':true, 'ui-sidebar-active': visible,
             'ui-sidebar-left': (position === 'left'), 'ui-sidebar-right': (position === 'right'),
-            'ui-sidebar-top': (position === 'top'), 'ui-sidebar-bottom': (position === 'bottom'), 
+            'ui-sidebar-top': (position === 'top'), 'ui-sidebar-bottom': (position === 'bottom'),
             'ui-sidebar-full': fullScreen}"
             [@panelState]="visible ? 'visible' : 'hidden'" [ngStyle]="style" [class]="styleClass">
             <a [ngClass]="{'ui-sidebar-close ui-corner-all':true}" href="#" role="button" (click)="close($event)">
@@ -32,65 +32,67 @@ import {DomHandler} from '../dom/domhandler';
     providers: [DomHandler]
 })
 export class Sidebar implements AfterViewInit, AfterViewChecked {
-    
+
     @Input() position: string = 'left';
-    
+
     @Input() fullScreen: boolean;
-    
+
     @Input() appendTo: string;
-    
+
     @Input() blockScroll: boolean = false;
-    
+
     @Input() style: any;
-        
+
     @Input() styleClass: string;
-    
+
     @Input() baseZIndex: number = 0;
-        
+
+    @Input() model: boolean = true;
+
     @ViewChild('container') containerViewChild: ElementRef;
-    
+
     @Output() onShow: EventEmitter<any> = new EventEmitter();
 
     @Output() onHide: EventEmitter<any> = new EventEmitter();
-    
+
     @Output() visibleChange:EventEmitter<any> = new EventEmitter();
-    
+
     initialized: boolean;
-    
+
     _visible: boolean;
-    
+
     preventVisibleChangePropagation: boolean;
-    
+
     mask: HTMLDivElement;
-    
+
     maskClickListener: Function;
-    
+
     executePostDisplayActions: boolean;
-    
+
     constructor(public el: ElementRef, public domHandler: DomHandler, public renderer: Renderer2) {}
-    
-    ngAfterViewInit() { 
+
+    ngAfterViewInit() {
         this.initialized = true;
-                      
+
         if(this.appendTo) {
             if(this.appendTo === 'body')
                 document.body.appendChild(this.containerViewChild.nativeElement);
             else
                 this.domHandler.appendChild(this.containerViewChild.nativeElement, this.appendTo);
         }
-        
+
         if(this.visible) {
             this.show();
         }
     }
-    
+
     @Input() get visible(): boolean {
         return this._visible;
     }
 
     set visible(val:boolean) {
         this._visible = val;
-        
+
         if(this.initialized && this.containerViewChild && this.containerViewChild.nativeElement) {
             if(this._visible)
                 this.show();
@@ -102,32 +104,38 @@ export class Sidebar implements AfterViewInit, AfterViewChecked {
             }
         }
     }
-    
+
     ngAfterViewChecked() {
         if(this.executePostDisplayActions) {
             this.onShow.emit({});
             this.executePostDisplayActions = false;
         }
     }
-    
+
     show() {
         this.executePostDisplayActions = true;
         this.containerViewChild.nativeElement.style.zIndex = String(this.baseZIndex + (++DomHandler.zindex));
-        this.enableModality();
+        if(this.model){
+            this.enableModality();
+        }
+
     }
-    
+
     hide() {
         this.onHide.emit({});
-        this.disableModality();
+        if(this.model){
+            this.disableModality();
+        }
+
     }
-    
+
     close(event: Event) {
         this.preventVisibleChangePropagation = true;
         this.hide();
         this.visibleChange.emit(false);
         event.preventDefault();
     }
-    
+
     enableModality() {
         if(!this.mask) {
             this.mask = document.createElement('div');
@@ -142,7 +150,7 @@ export class Sidebar implements AfterViewInit, AfterViewChecked {
             }
         }
     }
-        
+
     disableModality() {
         if(this.mask) {
             this.unbindMaskClickListener();
@@ -153,25 +161,25 @@ export class Sidebar implements AfterViewInit, AfterViewChecked {
             this.mask = null;
         }
     }
-    
+
     unbindMaskClickListener() {
         if(this.maskClickListener) {
             this.maskClickListener();
             this.maskClickListener = null;
         }
     }
-    
+
     ngOnDestroy() {
         this.initialized = false;
-        
+
         if(this.visible) {
             this.hide();
         }
-                
+
         if(this.appendTo) {
             this.el.nativeElement.appendChild(this.containerViewChild.nativeElement);
         }
-		
+
 		this.unbindMaskClickListener();
     }
 }
